@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:sqflite_migration_example/app/locator.dart';
-import 'package:sqflite_migration_example/ui/router.dart' as router;
-import 'package:sqflite_migration_example/ui/startup/startup_view.dart';
+import 'package:papi_todo/app/locator.dart';
+import 'package:papi_todo/ui/router.dart' as router;
+import 'package:papi_todo/ui/startup/startup_view.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 void main() {
@@ -24,6 +24,7 @@ class MyApp extends StatelessWidget {
       navigatorKey: locator<NavigationService>().navigatorKey,
       home: StartupView(),
       onGenerateRoute: router.Router.onGenerateRoute,
+      theme: ThemeData(primaryColor: Colors.green[900]),
     );
   }
 }

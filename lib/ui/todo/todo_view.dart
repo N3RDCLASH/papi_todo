@@ -1,104 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:sqflite_migration_example/ui/todo/todo_viewmodel.dart';
+import 'package:papi_todo/ui/todo/todo_viewmodel.dart';
 import 'package:stacked/stacked.dart';
+import '../done_todos/done_todos_view.dart';
+import '../open_todos/open_todos_view.dart';
 
 class TodoView extends HookWidget {
   const TodoView({Key key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    var todoController = useTextEditingController();
-    var descriptionController = useTextEditingController();
-
     return new WillPopScope(
       onWillPop: () async => false,
-      child: ViewModelBuilder<TodoViewModel>.reactive(
-        builder: (context, model, child) => Scaffold(
-          appBar: AppBar(
-            leading: Container(),
-            title: Text(model.title),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () async {
-              if (todoController.text != '') {
-                model.addTodo(todoController.text, descriptionController.text);
-                todoController.clear();
-                descriptionController.clear();
-              }
-            },
-            child: !model.isBusy
-                ? Icon(Icons.add)
-                : CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation(Colors.white),
-                  ),
-          ),
-          body: SizedBox(
-            height: MediaQuery.of(context).size.height,
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
+      child: DefaultTabController(
+        // The number of tabs / content sections to display.
+        length: 2,
+        child: ViewModelBuilder<TodoViewModel>.reactive(
+          builder: (context, model, child) => Scaffold(
+            appBar: AppBar(
+              backgroundColor: Colors.green[900],
+              title: Text('Papi Todo'),
+              leading: Container(),
+              bottom: TabBar(
+                tabs: [
+                  Tab(icon: Icon(Icons.assignment)),
+                  Tab(icon: Icon(Icons.assignment_turned_in)),
+                ],
+              ),
+            ),
+            body: TabBarView(
               children: [
-                SizedBox(height: 60),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25),
-                  child: TextField(
-                    controller: todoController,
-                    decoration: InputDecoration(hintText: 'Add a todo'),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25),
-                  child: TextField(
-                    controller: descriptionController,
-                    decoration: InputDecoration(hintText: 'Add a description'),
-                  ),
-                ),
-                SizedBox(height: 20),
-                if (model.dataReady && model.data.isNotEmpty)
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: model.data.length,
-                      itemBuilder: (context, index) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 25),
-                        height: 80,
-                        child: Card(
-                          color: Colors.white,
-                          child: InkWell(
-                            // When the user taps the button, show a snackbar.
-                            onTap: () {
-                              // Scaffold.of(context).showSnackBar(SnackBar(
-                              //   content: Text('Tap'),
-                              // ));
-                              showSingleTodo(
-                                  model, context, model.data[index], index);
-                              print(model.data);
-                            },
-                            child: ListTile(
-                              title: Text(model.data[index].title ?? 'title'),
-                              subtitle: Text(model.data[index].description ??
-                                  'description'),
-                              trailing: Listener(
-                                key: Key(model.data[index].id.toString()),
-                                child: Icon(
-                                  Icons.remove_circle,
-                                  color: Colors.redAccent,
-                                ),
-                                onPointerDown: (pointerEvent) =>
-                                    model.setCompleteForItem(index, true),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (model.dataReady && model.data.isEmpty)
-                  Text('No todo\'s yet. Add some'),
+                OpenTodosView(),
+                DoneTodosView(),
               ],
             ),
           ),
-        ),
-        viewModelBuilder: () => TodoViewModel(),
+          viewModelBuilder: () => TodoViewModel(),
+        ), // Complete this code in the next step.
       ),
     );
   }
@@ -133,16 +72,28 @@ void showSingleTodo(model, context, data, index) {
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: TextField(
-                      controller: todoController,
-                    ),
-                  ),
+                      padding: EdgeInsets.all(8.0),
+                      child: TextField(
+                        controller: todoController,
+                        decoration: InputDecoration(
+                          hintText: 'Add a Todo',
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                                color: Colors.greenAccent[400], width: 2.0),
+                          ),
+                        ),
+                      )),
                   Padding(
                     padding: EdgeInsets.all(8.0),
-                    child: TextFormField(
-                      controller: descriptionController,
-                    ),
+                    child: TextField(
+                        controller: descriptionController,
+                        decoration: InputDecoration(
+                          hintText: 'Add a description',
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                                color: Colors.greenAccent[400], width: 2.0),
+                          ),
+                        )),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -156,7 +107,97 @@ void showSingleTodo(model, context, data, index) {
                         descriptionController.clear();
                       },
                     ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: RaisedButton(
+                      color: Colors.red,
+                      child: Text(
+                        "Delete",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      onPressed: () {
+                        model.deleteTodo(index);
+                        Navigator.of(context).pop();
+                        todoController.clear();
+                        descriptionController.clear();
+                      },
+                    ),
                   )
+                ],
+              ),
+            ],
+          ),
+        );
+      });
+}
+
+void createTodo(model, context) {
+  var todoController = TextEditingController();
+  var descriptionController = TextEditingController();
+  showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Stack(
+            overflow: Overflow.visible,
+            children: <Widget>[
+              Positioned(
+                right: -40.0,
+                top: -40.0,
+                child: InkResponse(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: CircleAvatar(
+                    child: Icon(Icons.close),
+                    backgroundColor: Colors.red,
+                  ),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: TextField(
+                        controller: todoController,
+                        decoration: InputDecoration(
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                  color: Colors.greenAccent[400], width: 2.0),
+                            ),
+                            hintText: 'Add a Todo'),
+                      )),
+                  Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: TextFormField(
+                      controller: descriptionController,
+                      decoration: InputDecoration(
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                                color: Colors.greenAccent[400], width: 2.0),
+                          ),
+                          hintText: 'Add a Description'),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: RaisedButton(
+                      color: Colors.green[600],
+                      child:
+                          Text("Create", style: TextStyle(color: Colors.white)),
+                      onPressed: () {
+                        if (todoController.text != '') {
+                          model.addTodo(
+                              todoController.text, descriptionController.text);
+                          Navigator.of(context).pop();
+                          todoController.clear();
+                          descriptionController.clear();
+                        }
+                      },
+                    ),
+                  ),
                 ],
               ),
             ],

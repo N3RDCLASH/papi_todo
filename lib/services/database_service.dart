@@ -1,5 +1,5 @@
 import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_migration_example/app/locator.dart';
+import 'package:papi_todo/app/locator.dart';
 import 'package:sqflite_migration_service/sqflite_migration_service.dart';
 import '../models/todo.dart';
 
@@ -22,6 +22,21 @@ class DatabaseService {
   }
 
   Future<List<Todo>> getTodos() async {
+    // Gets all the data in the TodoTableName
+    List<Map> todoResults = await _database.query(TodoTableName);
+    // Maps it to a Todo object and returns it
+    return todoResults.map((todo) => Todo.fromJson(todo)).toList();
+  }
+
+  Future<List<Todo>> getDoneTodos() async {
+    // Gets all the data in the TodoTableName
+    List<Map> todoResults =
+        await _database.query(TodoTableName, where: 'complete = 1');
+    // Maps it to a Todo object and returns it
+    return todoResults.map((todo) => Todo.fromJson(todo)).toList();
+  }
+
+  Future<List<Todo>> getOpenTodos() async {
     // Gets all the data in the TodoTableName
     List<Map> todoResults =
         await _database.query(TodoTableName, where: 'complete = 0');
@@ -64,6 +79,19 @@ class DatabaseService {
             'title': title,
             'description': description,
           },
+          where: 'id = ?',
+          whereArgs: [id]);
+    } catch (e) {
+      print('Could not update the todo: $e');
+    }
+  }
+
+  Future deleteTodo({int id}) async {
+    try {
+      await _database.delete(
+          TodoTableName,
+          // We only pass in the data that we want to update. The field used here
+          // has to already exist in the schema
           where: 'id = ?',
           whereArgs: [id]);
     } catch (e) {

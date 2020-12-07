@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite_migration_example/ui/startup/startup_viewmodel.dart';
+import 'package:papi_todo/ui/startup/startup_viewmodel.dart';
 import 'package:stacked/stacked.dart';
 
 /// [StartupView] will be shown right after the native splash screen
